@@ -36,16 +36,28 @@ st.markdown("""
     .stButton > button { border-radius: 10px !important; font-weight: 700 !important; transition: all 0.2s; width: 100%; margin-top: 10px; }
     button[data-testid="baseButton-primary"] { background: #E23744 !important; color: white !important; border: none !important; }
     .stTextInput input { border-radius: 10px !important; padding: 10px !important; }
+
+    /* Sidebar Fix for Dark Mode */
+    [data-testid="stSidebar"] { background-color: #2a2a3b !important; }
+    [data-testid="stSidebar"] .stMarkdown h2, [data-testid="stSidebar"] .stMarkdown h1 { color: white !important; }
     </style>
 """, unsafe_allow_html=True)
 
 # --- 4. DATABASE FUNCTIONS ---
 DB_FILE = "orders_db.json"
+MENU_DB = "menu_db.json"
+ASSETS_DIR = "assets"
+
+# Ensure assets directory exists for images
+if not os.path.exists(ASSETS_DIR):
+    os.makedirs(ASSETS_DIR)
 
 
 def init_db():
     if not os.path.exists(DB_FILE):
         with open(DB_FILE, "w") as f: json.dump([], f)
+    if not os.path.exists(MENU_DB):
+        with open(MENU_DB, "w") as f: json.dump([], f)
 
 
 def get_orders():
@@ -97,7 +109,46 @@ if not st.session_state.admin_logged_in:
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# --- 6. MAIN KITCHEN DASHBOARD ---
+# --- 6. DISH MANAGEMENT (SIDEBAR FEATURE) ---
+with st.sidebar:
+    st.markdown("<h2 style='color:#E23744;'>➕ Add New Dish</h2>", unsafe_allow_html=True)
+    with st.form("add_dish_form", clear_on_submit=True):
+        d_name = st.text_input("Dish Name")
+        d_price = st.number_input("Price (₹)", min_value=0)
+        d_kcal = st.number_input("Calories", min_value=0)
+        d_cat = st.selectbox("Category", ["Veg", "Non-Veg", "Starters", "Soups", "Bread"])
+        d_file = st.file_uploader("Upload Dish Image", type=["jpg", "png", "jpeg"])
+
+        if st.form_submit_button("Publish to Menu", use_container_width=True):
+            if d_name and d_file:
+                # Save Image to Assets
+                file_path = os.path.join(ASSETS_DIR, d_file.name)
+                with open(file_path, "wb") as f:
+                    f.write(d_file.getbuffer())
+
+                # Update menu_db.json
+                init_db()
+                with open(MENU_DB, "r") as f:
+                    current_menu = json.load(f)
+
+                new_dish = {
+                    "id": len(current_menu) + 1000,
+                    "name_en": d_name,
+                    "price": d_price,
+                    "calories": d_kcal,
+                    "category": d_cat,
+                    "image": file_path
+                }
+
+                current_menu.append(new_dish)
+                with open(MENU_DB, "w") as f:
+                    json.dump(current_menu, f, indent=4)
+
+                st.success(f"✅ {d_name} is now Live!")
+            else:
+                st.error("Missing Name or Image!")
+
+# --- 7. MAIN KITCHEN DASHBOARD ---
 h1, h2, h3 = st.columns([6, 2, 1])
 with h1: st.title("🔥 Live Kitchen Dashboard")
 with h2:
