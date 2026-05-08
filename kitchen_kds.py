@@ -8,7 +8,6 @@ st.set_page_config(page_title="Kitchen Dashboard", page_icon="👨‍🍳", layo
 # --- 2. SESSION STATE ---
 if 'admin_logged_in' not in st.session_state: st.session_state.admin_logged_in = False
 if 'admin_user_db' not in st.session_state:
-    # MOCK DB: format is {"username": "password"}
     st.session_state.admin_user_db = {"admin": "123", "chef": "pass"}
 
 # --- 3. PREMIUM CSS (Dark Mode) ---
@@ -17,12 +16,8 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
     html, body, [class*="css"], * { font-family: 'Outfit', sans-serif !important; }
     .stApp { background-color: #1e1e2f; color: white; }
-
-    /* Login Card */
     .auth-card { background: #2a2a3b; border-radius: 20px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 400px; margin: 100px auto; border: 1px solid #444; }
     .gradient-text { background: linear-gradient(45deg, #E23744, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 2.5rem; margin-bottom: 5px; }
-
-    /* Order Tickets */
     .ticket { background: #2a2a3b; border-radius: 15px; padding: 20px; margin-bottom: 20px; border-left: 5px solid #E23744; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     .ticket.preparing { border-left-color: #f39c12; }
     .ticket.ready { border-left-color: #2ecc71; opacity: 0.7; }
@@ -31,13 +26,9 @@ st.markdown("""
     .ticket-time { color: #888; font-size: 0.9rem; }
     .item-list { list-style-type: none; padding: 0; margin: 0; }
     .item-list li { padding: 5px 0; font-size: 1.1rem; border-bottom: 1px dashed #444; color: #fff;}
-
-    /* Buttons */
     .stButton > button { border-radius: 10px !important; font-weight: 700 !important; transition: all 0.2s; width: 100%; margin-top: 10px; }
     button[data-testid="baseButton-primary"] { background: #E23744 !important; color: white !important; border: none !important; }
     .stTextInput input { border-radius: 10px !important; padding: 10px !important; }
-
-    /* Sidebar Fix for Dark Mode */
     [data-testid="stSidebar"] { background-color: #2a2a3b !important; }
     [data-testid="stSidebar"] .stMarkdown h2, [data-testid="stSidebar"] .stMarkdown h1 { color: white !important; }
     </style>
@@ -48,10 +39,8 @@ DB_FILE = "orders_db.json"
 MENU_DB = "menu_db.json"
 ASSETS_DIR = "assets"
 
-# Ensure assets directory exists for images
 if not os.path.exists(ASSETS_DIR):
     os.makedirs(ASSETS_DIR)
-
 
 def init_db():
     if not os.path.exists(DB_FILE):
@@ -59,23 +48,17 @@ def init_db():
     if not os.path.exists(MENU_DB):
         with open(MENU_DB, "w") as f: json.dump([], f)
 
-
 def get_orders():
     init_db()
     try:
-        with open(DB_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return []
-
+        with open(DB_FILE, "r") as f: return json.load(f)
+    except: return []
 
 def update_order_status(order_id, new_status):
     orders = get_orders()
     for o in orders:
         if o['order_id'] == order_id: o['status'] = new_status
-    with open(DB_FILE, "w") as f:
-        json.dump(orders, f)
-
+    with open(DB_FILE, "w") as f: json.dump(orders, f)
 
 # --- 5. SECURE LOGIN GATEWAY ---
 if not st.session_state.admin_logged_in:
@@ -94,8 +77,7 @@ if not st.session_state.admin_logged_in:
                 if l_user in st.session_state.admin_user_db and st.session_state.admin_user_db[l_user] == l_pass:
                     st.session_state.admin_logged_in = True
                     st.rerun()
-                else:
-                    st.error("Invalid Credentials.")
+                else: st.error("Invalid Credentials.")
 
         with tab2:
             r_user = st.text_input("New Admin ID")
@@ -104,8 +86,7 @@ if not st.session_state.admin_logged_in:
                 if r_user and r_pass:
                     st.session_state.admin_user_db[r_user] = r_pass
                     st.success(f"Registered {r_user} successfully! You can now login.")
-                else:
-                    st.error("Fill all fields.")
+                else: st.error("Fill all fields.")
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
@@ -116,7 +97,7 @@ with st.sidebar:
         d_name = st.text_input("Dish Name")
         d_price = st.number_input("Price (₹)", min_value=0)
         d_kcal = st.number_input("Calories", min_value=0)
-        d_cat = st.selectbox("Category", ["Veg", "Non-Veg", "Starters", "Soups", "Bread"])
+        d_cat = st.selectbox("Category", ["Veg", "Non-Veg", "Starters", "Soups"])
         d_file = st.file_uploader("Upload Dish Image", type=["jpg", "png", "jpeg"])
 
         if st.form_submit_button("Publish to Menu", use_container_width=True):
@@ -132,7 +113,7 @@ with st.sidebar:
                     current_menu = json.load(f)
 
                 new_dish = {
-                    "id": len(current_menu) + 1000,
+                    "id": f"KDS_{len(current_menu) + 1000}",
                     "name_en": d_name,
                     "price": d_price,
                     "calories": d_kcal,
